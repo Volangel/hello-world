@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  books Book[]
+}
+
+model NichePack {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String
+  targetFantasy  String
+  tropeLibrary   Json
+  heatCurve      Json
+  pacingRules    Json
+  forbiddenTerms Json
+  titleFormulas  Json
+  blurbFormulas  Json
+  keywordBank    Json
+  seriesDefaults Json
+  isSystem       Boolean  @default(true)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  books Book[]
+}
+
+model Book {
+  id           String   @id @default(cuid())
+  projectId    String
+  nichePackId  String
+  title        String?
+  status       String   @default("draft")
+  heatLevel    String   @default("medium")
+  lengthTarget Int      @default(35000)
+  seriesName   String?
+  seriesNumber Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project   Project   @relation(fields: [projectId], references: [id])
+  nichePack NichePack @relation(fields: [nichePackId], references: [id])
+  blueprint Blueprint?
+  chapters  Chapter[]
+  packaging Packaging[]
+  score     ProfitScore?
+  runs      Run[]
+}
+
+model Blueprint {
+  id        String   @id @default(cuid())
+  bookId    String   @unique
+  version   Int      @default(1)
+  status    String   @default("locked")
+  lockedAt  DateTime @default(now())
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+model Chapter {
+  id        String   @id @default(cuid())
+  bookId    String
+  number    Int
+  title     String?
+  status    String   @default("planned")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  book     Book      @relation(fields: [bookId], references: [id])
+  segments Segment[]
+
+  @@unique([bookId, number])
+}
+
+model Segment {
+  id        String   @id @default(cuid())
+  chapterId String
+  order     Int
+  status    String   @default("draft")
+  content   String   @default("")
+  qcData    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chapter Chapter @relation(fields: [chapterId], references: [id])
+
+  @@unique([chapterId, order])
+}
+
+model Packaging {
+  id        String   @id @default(cuid())
+  bookId    String
+  version   Int      @default(1)
+  status    String   @default("draft")
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+model ProfitScore {
+  id        String   @id @default(cuid())
+  bookId    String   @unique
+  score     Float
+  status    String   @default("pending")
+  breakdown Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+model Run {
+  id        String   @id @default(cuid())
+  bookId    String
+  stage     String
+  status    String   @default("queued")
+  meta      Json?
+  startedAt DateTime?
+  endedAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+model PromptTemplate {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  systemPrompt String
+  userPrompt   String
+  modelRole    String   @default("planner")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
